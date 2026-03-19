@@ -91,16 +91,30 @@ pipeline {
             }
         }
     }
-    
+
     post {
-        always {
-            cleanWs()
-        }
-        success {
-            echo "Пайплайн успешно выполнен для окружения ${params.ENVIRONMENT}!"
-        }
-        failure {
-            echo "Ошибка пайплайна!"
-        }
-    }
+	    always {
+	        cleanWs()
+	    }
+	    success {
+	        emailext(
+	            to: 'evgen3email@gmail.com',
+	            subject: "УСПЕХ: Pipeline ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
+	            body: """
+	            <p>Сборка #${env.BUILD_NUMBER} успешно завершена и развернута в окружении <b>${params.ENVIRONMENT}</b>.</p>
+	            <p>Проверить логи можно по ссылке: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+	            """
+	        )
+	    }
+	    failure {
+	        emailext(
+	            to: 'evgen3email@gmail.com',
+	            subject: "ОШИБКА: Pipeline ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
+	            body: """
+	            <p>Сборка #${env.BUILD_NUMBER} завершилась с ошибкой.</p>
+	            <p><b>Обязательно проверьте консольный вывод:</b> <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+	            """
+	        )
+	    }
+    }    
 }
