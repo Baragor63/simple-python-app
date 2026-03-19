@@ -59,8 +59,13 @@ pipeline {
         stage('Approve Production') {
             when { expression { params.ENVIRONMENT == 'production' } }
             steps {
-                input message: "Подтвердите развертывание в PRODUCTION?", ok: "Да, развернуть",
-                      parameters:[string(name: 'PROD_VERSION', defaultValue: "v1.0.${BUILD_NUMBER}")]
+                script {
+                    env.PROD_VERSION = input(
+                        message: "Подтвердите развертывание в PRODUCTION?", 
+                        ok: "Да, развернуть",
+                        parameters:[string(name: 'PROD_VERSION', defaultValue: "v1.0.${BUILD_NUMBER}")]
+                    )
+                }
             }
         }
 
@@ -68,15 +73,15 @@ pipeline {
             when { expression { params.ENVIRONMENT == 'production' } }
             steps {
                 withCredentials([usernamePassword(credentialsId: 'github-credentials', passwordVariable: 'GIT_PASS', usernameVariable: 'GIT_USER')]) {
-                    sh """
+                    sh '''
                         git config user.email "jenkins@ci.com"
                         git config user.name "Jenkins CI"
-                        git tag -a \${PROD_VERSION} -m "Release \${PROD_VERSION}"
-                        git push https://${GIT_USER}:${GIT_PASS}@github.com/${GIT_USER}/simple-python-app.git \${PROD_VERSION}
-                    """
+                        git tag -a "$PROD_VERSION" -m "Release $PROD_VERSION"
+                        git push "https://$GIT_USER:$GIT_PASS@github.com/Baragor63/simple-python-app.git" "$PROD_VERSION"
+                    '''
                 }
             }
-        }
+        }        
         
         stage('Deploy to Production') {
             when { expression { params.ENVIRONMENT == 'production' } }
@@ -93,7 +98,6 @@ pipeline {
         }
         success {
             echo "Пайплайн успешно выполнен для окружения ${params.ENVIRONMENT}!"
-            // Здесь может быть вызов email или telegram плагина
         }
         failure {
             echo "Ошибка пайплайна!"
